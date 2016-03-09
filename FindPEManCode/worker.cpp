@@ -230,7 +230,7 @@ int DoMainWork()
 					{
 						pRegionBase = (PBYTE)pRegionBase + mbi.RegionSize; // not found a region with ER/EWR attribute yet, check the next region
 						BOOL bIsWow64 = IsWow64(hProcess);
-						if (bIsWow64 && (pRegionBase>=(LPCVOID)0x000000007ffeffff))
+						if (bIsWow64 && (pRegionBase>=(LPCVOID)0x7ffeffff))
 						{
 							break; // reached the limit region for 32bit VM
 						}
