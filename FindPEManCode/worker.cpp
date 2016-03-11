@@ -172,71 +172,37 @@ int DoMainWork()
 	memset(&lvI, 0, sizeof(LVITEM)); // needed, otherwise lvI's members are not valid because of stack's old values (garbage)
 	lvI.mask = LVIF_TEXT | LVIF_STATE | LVIF_PARAM;
 	MEMORY_BASIC_INFORMATION mbi;
-	//WCHAR szFileName[256];
-	//WCHAR szOutput[256];
 	do
 	{
 		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pe32.th32ProcessID);
 		if (hProcess != 0) // if able to query this process' memory
 		{
 			LPCVOID pRegionBase = (LPCVOID)0x10000; // start scanning from user-mode VM partition 
-			/*BOOL bIsWow64 = IsWow64(hProcess);
-			if (bIsWow64)
-			{*/
-			//for (;;)
-			//{
-			//	if (VirtualQueryEx(hProcess, pRegionBase,
-			//		(PMEMORY_BASIC_INFORMATION)&mbi, sizeof(MEMORY_BASIC_INFORMATION)) != 0)
-			//	{
-			//		if ((mbi.Type == MEM_PRIVATE)
-			//			&& (mbi.Protect == PAGE_EXECUTE_READWRITE || mbi.Protect == PAGE_EXECUTE_READ))
-			//		{
-			//			// always insert a new item at index 0
-			//			lvI.lParam = pe32.th32ProcessID;
-			//			lvI.iSubItem = 0;
-			//			lvI.pszText = new TCHAR[256];
-			//			StringCchPrintf(lvI.pszText, sizeof(TCHAR) * 256 / sizeof(TCHAR), L"%d", pe32.th32ProcessID);
-			//			ListView_InsertItem(hWndListView, &lvI);
-			//			//ListView_SetItem(hWndListView, &lvI);
-			//			ListView_SetItemText(hWndListView, 0, 1, pe32.szExeFile);
-			//			break; // found a region with ER/EWR attribute, stop scanning this process' VM
-			//		}
-			//		else
-			//		{
-			//			pRegionBase = (PBYTE)pRegionBase + mbi.RegionSize; // not found a region with ER/EWR attribute yet, check the next region
-			//		}
-			//	}
-			//	else
-			//	{
-			//		break; // reached the end of valid virtual memory partition, stop scanning this process' VM
-			//	}
-				while (VirtualQueryEx(hProcess, pRegionBase,
-					(PMEMORY_BASIC_INFORMATION)&mbi, sizeof(MEMORY_BASIC_INFORMATION)) != 0)
+			while (VirtualQueryEx(hProcess, pRegionBase,
+				(PMEMORY_BASIC_INFORMATION)&mbi, sizeof(MEMORY_BASIC_INFORMATION)) != 0)
+			{
+				if ((mbi.Type == MEM_PRIVATE)
+					&& (mbi.Protect == PAGE_EXECUTE_READWRITE || mbi.Protect == PAGE_EXECUTE_READ))
 				{
-					if ((mbi.Type == MEM_PRIVATE)
-						&& (mbi.Protect == PAGE_EXECUTE_READWRITE || mbi.Protect == PAGE_EXECUTE_READ))
+					// always insert a new item at index 0
+					lvI.lParam = pe32.th32ProcessID;
+					lvI.iSubItem = 0;
+					lvI.pszText = new TCHAR[256];
+					StringCchPrintf(lvI.pszText, sizeof(TCHAR) * 256 / sizeof(TCHAR), L"%d", pe32.th32ProcessID);
+					ListView_InsertItem(hWndListView, &lvI);
+					//ListView_SetItem(hWndListView, &lvI);
+					ListView_SetItemText(hWndListView, 0, 1, pe32.szExeFile);
+					break; // found a region with ER/EWR attribute, stop scanning this process' VM
+				}
+				else
+				{
+					pRegionBase = (PBYTE)pRegionBase + mbi.RegionSize; // not found a region with ER/EWR attribute yet, check the next region
+					BOOL bIsWow64 = IsWow64(hProcess);
+					if (bIsWow64 && (pRegionBase >= (LPCVOID)0x7ffeffff))
 					{
-						// always insert a new item at index 0
-						lvI.lParam = pe32.th32ProcessID;
-						lvI.iSubItem = 0;
-						lvI.pszText = new TCHAR[256];
-						StringCchPrintf(lvI.pszText, sizeof(TCHAR) * 256 / sizeof(TCHAR), L"%d", pe32.th32ProcessID);
-						ListView_InsertItem(hWndListView, &lvI);
-						//ListView_SetItem(hWndListView, &lvI);
-						ListView_SetItemText(hWndListView, 0, 1, pe32.szExeFile);
-						break; // found a region with ER/EWR attribute, stop scanning this process' VM
+						break; // reached the end of valid virtual memory partition for 32bit VM, stop scanning this process' VM
 					}
-					else
-					{
-						pRegionBase = (PBYTE)pRegionBase + mbi.RegionSize; // not found a region with ER/EWR attribute yet, check the next region
-						BOOL bIsWow64 = IsWow64(hProcess);
-						if (bIsWow64 && (pRegionBase>=(LPCVOID)0x7ffeffff))
-						{
-							break; // reached the limit region for 32bit VM
-						}
-					}
-				//}
-				OutputDebugString(L"");
+				}
 			}
 		}
 		CloseHandle(hProcess);
